@@ -41,6 +41,14 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
 
+## Service Pattern with Interfaces
+
+- Business logic must live in service classes under `app/Services/`, never directly in controllers.
+- Every service must have a corresponding interface under `app/Interfaces/`. Example: `app/Interfaces/Auth/AuthServiceInterface.php` → `app/Services/Auth/AuthService.php`.
+- Interfaces must be bound to their concrete implementations in `AppServiceProvider::register()` using `$this->app->bind(FooInterface::class, FooService::class)`.
+- Controllers and other consumers must type-hint the interface, never the concrete class.
+- Use `vendor/bin/sail artisan make:interface` (or `make:class`) to scaffold interfaces and `make:class` for service classes.
+
 ## Frontend Bundling
 
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `vendor/bin/sail npm run build`, `vendor/bin/sail npm run dev`, or `vendor/bin/sail composer run dev`. Ask them.

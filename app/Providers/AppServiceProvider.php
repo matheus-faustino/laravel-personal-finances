@@ -3,10 +3,13 @@
 namespace App\Providers;
 
 use App\Interfaces\CategoryServiceInterface;
+use App\Interfaces\DocumentServiceInterface;
 use App\Interfaces\TransactionServiceInterface;
+use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\CategoryService;
+use App\Services\DocumentService;
 use App\Services\TransactionService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(CategoryServiceInterface::class, CategoryService::class);
         $this->app->bind(TransactionServiceInterface::class, TransactionService::class);
+        $this->app->bind(DocumentServiceInterface::class, DocumentService::class);
     }
 
     /**
@@ -29,21 +33,33 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
-            return url('/api/auth/reset-password?token=' . $token . '&email=' . urlencode($notifiable->getEmailForPasswordReset()));
+            return url('/api/auth/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset()));
         });
 
-        Gate::define('manage-categories', fn(User $user): bool => $user->isAdmin());
+        Gate::define('manage-categories', fn (User $user): bool => $user->isAdmin());
 
-        Gate::define('create-transaction', fn(User $user): bool => $user->isClient());
+        Gate::define('create-transaction', fn (User $user): bool => $user->isClient());
 
         Gate::define(
             'view-transaction',
-            fn(User $user, Transaction $transaction): bool => $user->isAdmin() || $transaction->user_id === $user->id
+            fn (User $user, Transaction $transaction): bool => $user->isAdmin() || $transaction->user_id === $user->id
         );
 
         Gate::define(
             'modify-transaction',
-            fn(User $user, Transaction $transaction): bool => $transaction->user_id === $user->id
+            fn (User $user, Transaction $transaction): bool => $transaction->user_id === $user->id
+        );
+
+        Gate::define('create-document', fn (User $user): bool => $user->isClient());
+
+        Gate::define(
+            'view-document',
+            fn (User $user, Document $document): bool => $user->isAdmin() || $document->user_id === $user->id
+        );
+
+        Gate::define(
+            'modify-document',
+            fn (User $user, Document $document): bool => $document->user_id === $user->id
         );
     }
 }

@@ -44,4 +44,9 @@ class User extends Authenticatable implements CanResetPassword, MustVerifyEmail
     {
         return $this->hasMany(Transaction::class, 'user_id');
     }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'user_id');
+    }
 }

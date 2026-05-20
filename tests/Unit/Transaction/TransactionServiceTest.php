@@ -22,7 +22,7 @@ class TransactionServiceTest extends TestCase
         $this->service = $this->app->make(TransactionServiceInterface::class);
     }
 
-    public function test_index_returns_all_transactions_for_admin(): void
+    public function test_get_all_for_user_returns_all_transactions_for_admin(): void
     {
         $admin = User::factory()->admin()->create();
         $clientA = User::factory()->client()->create();
@@ -31,12 +31,12 @@ class TransactionServiceTest extends TestCase
         Transaction::factory()->count(2)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(3)->create(['user_id' => $clientB->id]);
 
-        $result = $this->service->index($admin);
+        $result = $this->service->getAllForUser($admin);
 
         $this->assertCount(5, $result);
     }
 
-    public function test_index_returns_only_own_transactions_for_client(): void
+    public function test_get_all_for_user_returns_only_own_transactions_for_client(): void
     {
         $clientA = User::factory()->client()->create();
         $clientB = User::factory()->client()->create();
@@ -44,30 +44,21 @@ class TransactionServiceTest extends TestCase
         Transaction::factory()->count(3)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(2)->create(['user_id' => $clientB->id]);
 
-        $result = $this->service->index($clientA);
+        $result = $this->service->getAllForUser($clientA);
 
         $this->assertCount(3, $result);
     }
 
-    public function test_index_returns_empty_collection_when_no_transactions_exist(): void
+    public function test_get_all_for_user_returns_empty_collection_when_no_transactions_exist(): void
     {
         $admin = User::factory()->admin()->create();
 
-        $result = $this->service->index($admin);
+        $result = $this->service->getAllForUser($admin);
 
         $this->assertCount(0, $result);
     }
 
-    public function test_show_returns_the_given_transaction(): void
-    {
-        $transaction = Transaction::factory()->create();
-
-        $result = $this->service->show($transaction);
-
-        $this->assertTrue($result->is($transaction));
-    }
-
-    public function test_store_forces_user_id_to_authenticated_user(): void
+    public function test_create_forces_user_id_to_authenticated_user(): void
     {
         $client = User::factory()->client()->create();
         $category = Category::factory()->create();
@@ -79,13 +70,13 @@ class TransactionServiceTest extends TestCase
             'category_id' => $category->id,
         ];
 
-        $result = $this->service->store($client, $data);
+        $result = $this->service->create($client, $data);
 
         $this->assertSame($client->id, $result->user_id);
         $this->assertDatabaseHas('transactions', ['name' => 'Client Invoice', 'user_id' => $client->id]);
     }
 
-    public function test_store_overrides_spoofed_user_id_for_client(): void
+    public function test_create_overrides_spoofed_user_id_for_client(): void
     {
         $client = User::factory()->client()->create();
         $other = User::factory()->client()->create();
@@ -99,7 +90,7 @@ class TransactionServiceTest extends TestCase
             'user_id' => $other->id,
         ];
 
-        $result = $this->service->store($client, $data);
+        $result = $this->service->create($client, $data);
 
         $this->assertSame($client->id, $result->user_id);
         $this->assertDatabaseMissing('transactions', ['name' => 'Spoofed Invoice', 'user_id' => $other->id]);
@@ -135,11 +126,11 @@ class TransactionServiceTest extends TestCase
         $this->assertTrue($result->is($transaction));
     }
 
-    public function test_destroy_deletes_the_transaction(): void
+    public function test_delete_deletes_the_transaction(): void
     {
         $transaction = Transaction::factory()->create();
 
-        $this->service->destroy($transaction);
+        $this->service->delete($transaction);
 
         $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
     }

@@ -8,17 +8,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 class CategoryService implements CategoryServiceInterface
 {
-    public function index(): Collection
+    public function getAll(): Collection
     {
         return Category::all();
     }
 
-    public function show(Category $category): Category
-    {
-        return $category;
-    }
-
-    public function store(array $data): Category
+    public function create(array $data): Category
     {
         return Category::create($data);
     }
@@ -30,7 +25,7 @@ class CategoryService implements CategoryServiceInterface
         return $category;
     }
 
-    public function destroy(Category $category): void
+    public function delete(Category $category): void
     {
         $category->delete();
     }

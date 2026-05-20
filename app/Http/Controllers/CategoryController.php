@@ -15,19 +15,19 @@ class CategoryController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json($this->categoryService->index());
+        return response()->json($this->categoryService->getAll());
     }
 
     public function show(Category $category): JsonResponse
     {
-        return response()->json($this->categoryService->show($category));
+        return response()->json($category);
     }
 
     public function store(StoreCategoryRequest $request): JsonResponse
     {
         Gate::authorize('manage-categories');
 
-        $category = $this->categoryService->store($request->validated());
+        $category = $this->categoryService->create($request->validated());
 
         return response()->json($category, 201);
     }
@@ -43,7 +43,7 @@ class CategoryController extends Controller
     {
         Gate::authorize('manage-categories');
 
-        $this->categoryService->destroy($category);
+        $this->categoryService->delete($category);
 
         return response()->json(null, 204);
     }

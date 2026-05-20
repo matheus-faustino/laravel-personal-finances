@@ -20,34 +20,25 @@ class CategoryServiceTest extends TestCase
         $this->service = $this->app->make(CategoryServiceInterface::class);
     }
 
-    public function test_index_returns_all_categories(): void
+    public function test_get_all_returns_all_categories(): void
     {
         Category::factory()->count(3)->create();
 
-        $result = $this->service->index();
+        $result = $this->service->getAll();
 
         $this->assertCount(3, $result);
     }
 
-    public function test_index_returns_empty_collection_when_no_categories_exist(): void
+    public function test_get_all_returns_empty_collection_when_no_categories_exist(): void
     {
-        $result = $this->service->index();
+        $result = $this->service->getAll();
 
         $this->assertCount(0, $result);
     }
 
-    public function test_show_returns_the_given_category(): void
+    public function test_create_creates_and_returns_a_category(): void
     {
-        $category = Category::factory()->create();
-
-        $result = $this->service->show($category);
-
-        $this->assertTrue($result->is($category));
-    }
-
-    public function test_store_creates_and_returns_a_category(): void
-    {
-        $result = $this->service->store(['name' => 'Electronics']);
+        $result = $this->service->create(['name' => 'Electronics']);
 
         $this->assertInstanceOf(Category::class, $result);
         $this->assertSame('Electronics', $result->name);
@@ -73,11 +64,11 @@ class CategoryServiceTest extends TestCase
         $this->assertTrue($result->is($category));
     }
 
-    public function test_destroy_deletes_the_category(): void
+    public function test_delete_deletes_the_category(): void
     {
         $category = Category::factory()->create();
 
-        $this->service->destroy($category);
+        $this->service->delete($category);
 
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }

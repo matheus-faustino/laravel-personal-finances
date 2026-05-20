@@ -16,21 +16,21 @@ class TransactionController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json($this->transactionService->index($request->user()));
+        return response()->json($this->transactionService->getAllForUser($request->user()));
     }
 
     public function show(Transaction $transaction): JsonResponse
     {
         Gate::authorize('view-transaction', $transaction);
 
-        return response()->json($this->transactionService->show($transaction));
+        return response()->json($transaction);
     }
 
     public function store(StoreTransactionRequest $request): JsonResponse
     {
         Gate::authorize('create-transaction');
 
-        $transaction = $this->transactionService->store($request->user(), $request->validated());
+        $transaction = $this->transactionService->create($request->user(), $request->validated());
 
         return response()->json($transaction, 201);
     }
@@ -46,7 +46,7 @@ class TransactionController extends Controller
     {
         Gate::authorize('modify-transaction', $transaction);
 
-        $this->transactionService->destroy($transaction);
+        $this->transactionService->delete($transaction);
 
         return response()->json(null, 204);
     }

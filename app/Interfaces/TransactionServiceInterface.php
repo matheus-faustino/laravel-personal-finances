@@ -8,13 +8,11 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface TransactionServiceInterface
 {
-    public function index(User $user): Collection;
+    public function getAllForUser(User $user): Collection;
 
-    public function show(Transaction $transaction): Transaction;
-
-    public function store(User $user, array $data): Transaction;
+    public function create(User $user, array $data): Transaction;
 
     public function update(Transaction $transaction, array $data): Transaction;
 
-    public function destroy(Transaction $transaction): void;
+    public function delete(Transaction $transaction): void;
 }

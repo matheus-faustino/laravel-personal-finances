@@ -20,7 +20,6 @@ class DocumentFactory extends Factory
             'file' => 'documents/0/'.fake()->uuid().'.pdf',
             'user_id' => User::factory()->client(),
             'status' => DocumentStatus::Uploaded,
-            'fail_reason' => null,
         ];
     }
 

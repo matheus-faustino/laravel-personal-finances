@@ -192,7 +192,6 @@ class ProcessDocumentJobTest extends TestCase
         $this->assertDatabaseHas('documents', [
             'id' => $document->id,
             'status' => DocumentStatus::Failed->value,
-            'fail_reason' => 'AI service unavailable',
         ]);
     }
 }

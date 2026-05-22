@@ -32,10 +32,7 @@ class ProcessDocumentJob implements ShouldQueue
 
             $documentService->update($this->document, ['status' => DocumentStatus::Processed], null);
         } catch (\Throwable $e) {
-            $documentService->update($this->document, [
-                'status' => DocumentStatus::Failed,
-                'fail_reason' => 'There was an error while processing this document',
-            ], null);
+            $documentService->update($this->document, ['status' => DocumentStatus::Failed], null);
 
             throw $e;
         }

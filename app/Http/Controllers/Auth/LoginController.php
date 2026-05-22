@@ -13,14 +13,14 @@ class LoginController extends Controller
 {
     public function login(LoginRequest $request): JsonResponse
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['message' => __('auth.invalid_credentials')], 401);
         }
 
         /** @var User $user */
         $user = Auth::user();
 
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             Auth::logout();
 
             return response()->json(['message' => __('auth.email_not_verified')], 403);

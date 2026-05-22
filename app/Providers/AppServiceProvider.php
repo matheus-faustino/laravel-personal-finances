@@ -11,6 +11,9 @@ use App\Models\User;
 use App\Services\CategoryService;
 use App\Services\DocumentService;
 use App\Services\TransactionService;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -34,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             return url('/api/auth/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset()));
+        });
+
+        Scramble::configure()->withDocumentTransformers(function (OpenApi $openApi) {
+            $openApi->secure(SecurityScheme::http('bearer'));
         });
 
         Gate::define('manage-categories', fn (User $user): bool => $user->isAdmin());

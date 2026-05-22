@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\TransactionServiceInterface;
+use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,6 +17,16 @@ class TransactionService implements TransactionServiceInterface
         }
 
         return Transaction::where('user_id', $user->id)->get();
+    }
+
+    public function getAllForDocument(Document $document): Collection
+    {
+        return Transaction::where('document_id', $document->id)->get();
+    }
+
+    public function get(int $transactionId): Transaction
+    {
+        return Transaction::findOrFail($transactionId);
     }
 
     public function create(User $user, array $data): Transaction

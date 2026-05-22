@@ -57,6 +57,8 @@ services:
             - 8080:80
         environment:
             PMA_HOST: mysql
+        networks:
+            - sail
 
     redis:
         image: 'redis:alpine'

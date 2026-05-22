@@ -21,6 +21,12 @@ class TransactionFactory extends Factory
             'value' => fake()->randomFloat(2, 1, 10000),
             'category_id' => Category::factory(),
             'user_id' => User::factory()->client(),
+            'document_id' => null,
         ];
+    }
+
+    public function uncategorized(): static
+    {
+        return $this->state(['category_id' => null]);
     }
 }

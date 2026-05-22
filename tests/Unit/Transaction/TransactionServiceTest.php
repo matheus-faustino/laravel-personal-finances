@@ -4,8 +4,10 @@ namespace Tests\Unit\Transaction;
 
 use App\Interfaces\TransactionServiceInterface;
 use App\Models\Category;
+use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -56,6 +58,45 @@ class TransactionServiceTest extends TestCase
         $result = $this->service->getAllForUser($admin);
 
         $this->assertCount(0, $result);
+    }
+
+    public function test_get_all_for_document_returns_only_transactions_for_that_document(): void
+    {
+        $document = Document::factory()->create();
+        $otherDocument = Document::factory()->create();
+
+        Transaction::factory()->count(3)->create(['document_id' => $document->id]);
+        Transaction::factory()->count(2)->create(['document_id' => $otherDocument->id]);
+
+        $result = $this->service->getAllForDocument($document);
+
+        $this->assertCount(3, $result);
+        $result->each(fn ($t) => $this->assertSame($document->id, $t->document_id));
+    }
+
+    public function test_get_all_for_document_returns_empty_collection_when_no_transactions_linked(): void
+    {
+        $document = Document::factory()->create();
+
+        $result = $this->service->getAllForDocument($document);
+
+        $this->assertCount(0, $result);
+    }
+
+    public function test_get_returns_transaction_by_id(): void
+    {
+        $transaction = Transaction::factory()->create();
+
+        $result = $this->service->get($transaction->id);
+
+        $this->assertTrue($result->is($transaction));
+    }
+
+    public function test_get_throws_exception_for_non_existent_transaction(): void
+    {
+        $this->expectException(ModelNotFoundException::class);
+
+        $this->service->get(999999);
     }
 
     public function test_create_forces_user_id_to_authenticated_user(): void

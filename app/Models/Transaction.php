@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['name', 'description', 'date', 'value', 'category_id', 'user_id'])]
+#[Fillable(['name', 'description', 'date', 'value', 'category_id', 'user_id', 'document_id'])]
 class Transaction extends Model
 {
     /** @use HasFactory<TransactionFactory> */
@@ -30,5 +30,10 @@ class Transaction extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(Document::class);
     }
 }

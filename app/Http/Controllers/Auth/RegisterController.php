@@ -31,7 +31,7 @@ class RegisterController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (!hash_equals(sha1($user->getEmailForVerification()), $hash)) {
+        if (! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
             return response()->json(['message' => __('auth.invalid_verification_link')], 403);
         }
 
@@ -52,7 +52,7 @@ class RegisterController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if ($user && !$user->hasVerifiedEmail()) {
+        if ($user && ! $user->hasVerifiedEmail()) {
             $user->sendEmailVerificationNotification();
         }
 

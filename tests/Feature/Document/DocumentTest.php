@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Document;
 
+use App\Enums\DocumentStatus;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -18,6 +20,7 @@ class DocumentTest extends TestCase
         parent::setUp();
 
         Storage::fake('local');
+        Bus::fake();
     }
 
     private function validPayload(array $overrides = []): array
@@ -117,7 +120,7 @@ class DocumentTest extends TestCase
             ->assertCreated();
 
         $document = Document::first();
-        $this->assertDatabaseHas('documents', ['name' => 'Test Document', 'user_id' => $client->id]);
+        $this->assertDatabaseHas('documents', ['name' => 'Test Document', 'user_id' => $client->id, 'status' => DocumentStatus::Uploaded->value]);
         Storage::disk('local')->assertExists($document->file);
     }
 

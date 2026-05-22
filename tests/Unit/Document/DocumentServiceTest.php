@@ -3,10 +3,13 @@
 namespace Tests\Unit\Document;
 
 use App\Interfaces\DocumentServiceInterface;
+use App\Jobs\CategorizeTransactionsJob;
+use App\Jobs\ProcessDocumentJob;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -21,6 +24,7 @@ class DocumentServiceTest extends TestCase
         parent::setUp();
 
         Storage::fake('local');
+        Bus::fake();
 
         $this->service = $this->app->make(DocumentServiceInterface::class);
     }
@@ -147,5 +151,15 @@ class DocumentServiceTest extends TestCase
 
         $this->assertDatabaseMissing('documents', ['id' => $document->id]);
         Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_create_dispatches_process_and_categorize_job_chain(): void
+    {
+        $client = User::factory()->client()->create();
+        $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+
+        $this->service->create($client, ['name' => 'My Doc'], $file);
+
+        Bus::assertChained([ProcessDocumentJob::class, CategorizeTransactionsJob::class]);
     }
 }

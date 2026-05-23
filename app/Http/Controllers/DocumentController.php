@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Document\StoreDocumentRequest;
 use App\Http\Requests\Document\UpdateDocumentRequest;
+use App\Http\Resources\DocumentResource;
 use App\Interfaces\DocumentServiceInterface;
 use App\Models\Document;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,16 +18,16 @@ class DocumentController extends Controller
 {
     public function __construct(private readonly DocumentServiceInterface $documentService) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return response()->json($this->documentService->getAllForUser($request->user()));
+        return DocumentResource::collection($this->documentService->getAllForUser($request->user()));
     }
 
-    public function show(Document $document): JsonResponse
+    public function show(Document $document): DocumentResource
     {
         Gate::authorize('view-document', $document);
 
-        return response()->json($document);
+        return new DocumentResource($document);
     }
 
     public function store(StoreDocumentRequest $request): JsonResponse
@@ -38,10 +40,10 @@ class DocumentController extends Controller
             $request->file('file')
         );
 
-        return response()->json($document, 201);
+        return (new DocumentResource($document))->response()->setStatusCode(201);
     }
 
-    public function update(UpdateDocumentRequest $request, Document $document): JsonResponse
+    public function update(UpdateDocumentRequest $request, Document $document): DocumentResource
     {
         Gate::authorize('modify-document', $document);
 
@@ -51,7 +53,7 @@ class DocumentController extends Controller
             $request->file('file')
         );
 
-        return response()->json($updated);
+        return new DocumentResource($updated);
     }
 
     public function destroy(Document $document): JsonResponse

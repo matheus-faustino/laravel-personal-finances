@@ -36,7 +36,7 @@ class TransactionTest extends TestCase
 
         $this->actingAs($admin)->getJson('/api/transactions')
             ->assertOk()
-            ->assertJsonCount(5);
+            ->assertJsonCount(5, 'data');
     }
 
     public function test_client_can_only_list_their_own_transactions(): void
@@ -49,7 +49,7 @@ class TransactionTest extends TestCase
 
         $this->actingAs($clientA)->getJson('/api/transactions')
             ->assertOk()
-            ->assertJsonCount(3);
+            ->assertJsonCount(3, 'data');
     }
 
     public function test_unauthenticated_user_cannot_list_transactions(): void

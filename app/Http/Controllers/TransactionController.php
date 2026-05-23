@@ -4,26 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Transaction\StoreTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
+use App\Http\Resources\TransactionResource;
 use App\Interfaces\TransactionServiceInterface;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
 class TransactionController extends Controller
 {
     public function __construct(private readonly TransactionServiceInterface $transactionService) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return response()->json($this->transactionService->getAllForUser($request->user()));
+        return TransactionResource::collection($this->transactionService->getAllForUser($request->user()));
     }
 
-    public function show(Transaction $transaction): JsonResponse
+    public function show(Transaction $transaction): TransactionResource
     {
         Gate::authorize('view-transaction', $transaction);
 
-        return response()->json($transaction);
+        return new TransactionResource($transaction);
     }
 
     public function store(StoreTransactionRequest $request): JsonResponse
@@ -32,14 +34,14 @@ class TransactionController extends Controller
 
         $transaction = $this->transactionService->create($request->user(), $request->validated());
 
-        return response()->json($transaction, 201);
+        return (new TransactionResource($transaction))->response()->setStatusCode(201);
     }
 
-    public function update(UpdateTransactionRequest $request, Transaction $transaction): JsonResponse
+    public function update(UpdateTransactionRequest $request, Transaction $transaction): TransactionResource
     {
         Gate::authorize('modify-transaction', $transaction);
 
-        return response()->json($this->transactionService->update($transaction, $request->validated()));
+        return new TransactionResource($this->transactionService->update($transaction, $request->validated()));
     }
 
     public function destroy(Transaction $transaction): JsonResponse

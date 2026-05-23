@@ -20,7 +20,7 @@ class CategoryTest extends TestCase
 
         $response = $this->actingAs($admin)->getJson('/api/categories');
 
-        $response->assertOk()->assertJsonCount(3);
+        $response->assertOk()->assertJsonCount(3, 'data');
     }
 
     public function test_client_can_list_categories(): void
@@ -30,7 +30,7 @@ class CategoryTest extends TestCase
 
         $response = $this->actingAs($client)->getJson('/api/categories');
 
-        $response->assertOk()->assertJsonCount(2);
+        $response->assertOk()->assertJsonCount(2, 'data');
     }
 
     public function test_unauthenticated_user_cannot_list_categories(): void

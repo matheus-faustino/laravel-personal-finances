@@ -4,23 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Category\StoreCategoryRequest;
 use App\Http\Requests\Category\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Interfaces\CategoryServiceInterface;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
 class CategoryController extends Controller
 {
     public function __construct(private readonly CategoryServiceInterface $categoryService) {}
 
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json($this->categoryService->getAll());
+        return CategoryResource::collection($this->categoryService->getAll());
     }
 
-    public function show(Category $category): JsonResponse
+    public function show(Category $category): CategoryResource
     {
-        return response()->json($category);
+        return new CategoryResource($category);
     }
 
     public function store(StoreCategoryRequest $request): JsonResponse
@@ -29,14 +31,14 @@ class CategoryController extends Controller
 
         $category = $this->categoryService->create($request->validated());
 
-        return response()->json($category, 201);
+        return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
-    public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
+    public function update(UpdateCategoryRequest $request, Category $category): CategoryResource
     {
         Gate::authorize('manage-categories');
 
-        return response()->json($this->categoryService->update($category, $request->validated()));
+        return new CategoryResource($this->categoryService->update($category, $request->validated()));
     }
 
     public function destroy(Category $category): JsonResponse

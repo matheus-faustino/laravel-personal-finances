@@ -45,7 +45,7 @@ class DocumentTest extends TestCase
 
         $this->actingAs($admin)->getJson('/api/documents')
             ->assertOk()
-            ->assertJsonCount(5);
+            ->assertJsonCount(5, 'data');
     }
 
     public function test_client_can_only_list_their_own_documents(): void
@@ -58,7 +58,7 @@ class DocumentTest extends TestCase
 
         $this->actingAs($clientA)->getJson('/api/documents')
             ->assertOk()
-            ->assertJsonCount(3);
+            ->assertJsonCount(3, 'data');
     }
 
     public function test_unauthenticated_user_cannot_list_documents(): void

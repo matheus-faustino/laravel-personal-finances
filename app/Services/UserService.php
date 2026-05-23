@@ -20,7 +20,11 @@ class UserService implements UserServiceInterface
     {
         $data['password'] = Hash::make($data['password']);
 
-        return User::create($data);
+        $user = User::create($data);
+
+        $user->sendEmailVerificationNotification();
+
+        return $user;
     }
 
     /** {@inheritDoc} */

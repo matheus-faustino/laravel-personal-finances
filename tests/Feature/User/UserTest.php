@@ -4,8 +4,10 @@ namespace Tests\Feature\User;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -83,6 +85,8 @@ class UserTest extends TestCase
 
     public function test_admin_can_create_a_user(): void
     {
+        Notification::fake();
+
         $admin = User::factory()->admin()->create();
 
         $response = $this->actingAs($admin)->postJson('/api/users', [
@@ -94,6 +98,11 @@ class UserTest extends TestCase
 
         $response->assertCreated()->assertJsonFragment(['email' => 'newuser@example.com']);
         $this->assertDatabaseHas('users', ['email' => 'newuser@example.com']);
+
+        Notification::assertSentTo(
+            User::where('email', 'newuser@example.com')->first(),
+            VerifyEmail::class
+        );
     }
 
     public function test_admin_can_create_a_user_with_explicit_role(): void

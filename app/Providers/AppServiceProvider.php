@@ -5,12 +5,14 @@ namespace App\Providers;
 use App\Interfaces\CategoryServiceInterface;
 use App\Interfaces\DocumentServiceInterface;
 use App\Interfaces\TransactionServiceInterface;
+use App\Interfaces\UserServiceInterface;
 use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\CategoryService;
 use App\Services\DocumentService;
 use App\Services\TransactionService;
+use App\Services\UserService;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CategoryServiceInterface::class, CategoryService::class);
         $this->app->bind(TransactionServiceInterface::class, TransactionService::class);
         $this->app->bind(DocumentServiceInterface::class, DocumentService::class);
+        $this->app->bind(UserServiceInterface::class, UserService::class);
     }
 
     /**
@@ -42,6 +45,20 @@ class AppServiceProvider extends ServiceProvider
         Scramble::configure()->withDocumentTransformers(function (OpenApi $openApi) {
             $openApi->secure(SecurityScheme::http('bearer'));
         });
+
+        Gate::define('create-user', fn (User $user): bool => $user->isAdmin());
+
+        Gate::define('view-any-user', fn (User $user): bool => $user->isAdmin());
+
+        Gate::define(
+            'view-user',
+            fn (User $user, User $target): bool => $user->isAdmin() || $user->id === $target->id
+        );
+
+        Gate::define(
+            'delete-user',
+            fn (User $user, User $target): bool => $user->isAdmin()
+        );
 
         Gate::define('manage-categories', fn (User $user): bool => $user->isAdmin());
 

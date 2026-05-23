@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function (): void {
+    Route::apiResource('users', UserController::class)->names('users')->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::apiResource('categories', CategoryController::class)->names('categories');
     Route::apiResource('transactions', TransactionController::class)->names('transactions');
     Route::apiResource('documents', DocumentController::class)->names('documents');

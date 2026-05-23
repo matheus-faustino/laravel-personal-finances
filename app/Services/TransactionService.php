@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class TransactionService implements TransactionServiceInterface
 {
+    /** {@inheritDoc} */
     public function getAllForUser(User $user): Collection
     {
         if ($user->isAdmin()) {
@@ -19,16 +20,19 @@ class TransactionService implements TransactionServiceInterface
         return Transaction::where('user_id', $user->id)->get();
     }
 
+    /** {@inheritDoc} */
     public function getAllForDocument(Document $document): Collection
     {
         return Transaction::where('document_id', $document->id)->get();
     }
 
+    /** {@inheritDoc} */
     public function get(int $transactionId): Transaction
     {
         return Transaction::findOrFail($transactionId);
     }
 
+    /** {@inheritDoc} */
     public function create(User $user, array $data): Transaction
     {
         $data['user_id'] = $user->id;
@@ -36,6 +40,7 @@ class TransactionService implements TransactionServiceInterface
         return Transaction::create($data);
     }
 
+    /** {@inheritDoc} */
     public function update(Transaction $transaction, array $data): Transaction
     {
         $transaction->update($data);
@@ -43,6 +48,7 @@ class TransactionService implements TransactionServiceInterface
         return $transaction;
     }
 
+    /** {@inheritDoc} */
     public function delete(Transaction $transaction): void
     {
         $transaction->delete();

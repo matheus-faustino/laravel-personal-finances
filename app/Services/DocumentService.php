@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentService implements DocumentServiceInterface
 {
+    /** {@inheritDoc} */
     public function getAllForUser(User $user): Collection
     {
         if ($user->isAdmin()) {
@@ -23,6 +24,7 @@ class DocumentService implements DocumentServiceInterface
         return Document::where('user_id', $user->id)->get();
     }
 
+    /** {@inheritDoc} */
     public function create(User $user, array $data, UploadedFile $file): Document
     {
         $data['user_id'] = $user->id;
@@ -38,6 +40,7 @@ class DocumentService implements DocumentServiceInterface
         return $document;
     }
 
+    /** {@inheritDoc} */
     public function update(Document $document, array $data, ?UploadedFile $file): Document
     {
         if ($file !== null) {
@@ -52,6 +55,7 @@ class DocumentService implements DocumentServiceInterface
         return $document;
     }
 
+    /** {@inheritDoc} */
     public function delete(Document $document): void
     {
         if ($document->file) {

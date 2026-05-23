@@ -162,6 +162,52 @@ class CategorizeTransactionsJobTest extends TestCase
         (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
 
+    public function test_job_sets_null_category_id_when_agent_returns_zero(): void
+    {
+        $category = Category::factory()->create();
+        /** @var Document $document */
+        $document = Document::factory()->create();
+        /** @var Transaction $transaction */
+        $transaction = Transaction::factory()->create([
+            'document_id' => $document->id,
+            'category_id' => $category->id,
+        ]);
+
+        /** @var TransactionCategorizerAgent&MockInterface $agent */
+        $agent = $this->mock(TransactionCategorizerAgent::class);
+        $agent->shouldReceive('categorize')
+            ->andReturn([
+                array_merge($transaction->toArray(), ['category_id' => 0]),
+            ]);
+
+        /** @var CategoryServiceInterface&MockInterface $categoryService */
+        $categoryService = $this->mock(CategoryServiceInterface::class);
+        $categoryService->shouldReceive('getAll')
+            ->andReturn(new Collection);
+
+        /** @var TransactionServiceInterface&MockInterface $transactionService */
+        $transactionService = $this->mock(TransactionServiceInterface::class);
+        $transactionService->shouldReceive('getAllForDocument')
+            ->with($document)
+            ->andReturn(new Collection([$transaction]));
+        $transactionService->shouldReceive('get')
+            ->once()
+            ->with($transaction->id)
+            ->andReturn($transaction);
+        $transactionService->shouldReceive('update')
+            ->once()
+            ->with($transaction, ['category_id' => null])
+            ->andReturn($transaction);
+
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null);
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
+    }
+
     public function test_job_skips_agent_call_when_document_has_no_transactions(): void
     {
         /** @var Document $document */

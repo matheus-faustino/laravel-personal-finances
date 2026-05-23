@@ -37,7 +37,7 @@ class CategorizeTransactionsJob implements ShouldQueue
             foreach ($categorized as $data) {
                 $transaction = $transactionService->get($data['id']);
 
-                $transactionService->update($transaction, ['category_id' => $data['category_id'] ?? null]);
+                $transactionService->update($transaction, ['category_id' => $data['category_id'] ?: null]);
             }
 
             $documentService->update($this->document, ['status' => DocumentStatus::Processed], null);

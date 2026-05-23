@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
 
         Scramble::configure()->withDocumentTransformers(function (OpenApi $openApi) {
             $openApi->secure(SecurityScheme::http('bearer'));
+            $openApi->info->setVersion(config('app.api_version', '1.0.0'));
         });
 
         Gate::define('create-user', fn (User $user): bool => $user->isAdmin());

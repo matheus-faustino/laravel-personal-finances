@@ -4,6 +4,7 @@ namespace Tests\Feature\Jobs;
 
 use App\Ai\Agents\TransactionCategorizerAgent;
 use App\Interfaces\CategoryServiceInterface;
+use App\Interfaces\DocumentServiceInterface;
 use App\Interfaces\TransactionServiceInterface;
 use App\Jobs\CategorizeTransactionsJob;
 use App\Models\Category;
@@ -11,7 +12,6 @@ use App\Models\Document;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
 use RuntimeException;
 use Tests\TestCase;
@@ -44,6 +44,9 @@ class CategorizeTransactionsJobTest extends TestCase
             ->once()
             ->andReturn($categories);
 
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+
         /** @var TransactionServiceInterface&MockInterface $transactionService */
         $transactionService = $this->mock(TransactionServiceInterface::class);
         $transactionService->shouldReceive('getAllForDocument')
@@ -52,7 +55,7 @@ class CategorizeTransactionsJobTest extends TestCase
             ->andReturn($transactions);
         $transactionService->shouldNotReceive('update');
 
-        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $transactionService);
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
 
     public function test_job_updates_transactions_with_assigned_category_ids(): void
@@ -100,7 +103,10 @@ class CategorizeTransactionsJobTest extends TestCase
             ->with($transactions[1], ['category_id' => $category->id])
             ->andReturn($transactions[1]);
 
-        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $transactionService);
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
 
     public function test_job_sets_null_category_id_for_unmatched_transactions(): void
@@ -140,7 +146,10 @@ class CategorizeTransactionsJobTest extends TestCase
             ->with($transaction, ['category_id' => null])
             ->andReturn($transaction);
 
-        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $transactionService);
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
 
     public function test_job_skips_agent_call_when_document_has_no_transactions(): void
@@ -163,10 +172,13 @@ class CategorizeTransactionsJobTest extends TestCase
             ->andReturn(new Collection);
         $transactionService->shouldNotReceive('update');
 
-        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $transactionService);
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
 
-    public function test_job_logs_error_and_rethrows_when_agent_throws(): void
+    public function test_job_sets_document_status_to_failed_and_rethrows_when_agent_throws(): void
     {
         /** @var Document $document */
         $document = Document::factory()->create();
@@ -189,18 +201,26 @@ class CategorizeTransactionsJobTest extends TestCase
             ->andReturn($transactions);
         $transactionService->shouldNotReceive('update');
 
-        Log::shouldReceive('error')
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
             ->once()
-            ->with('CategorizeTransactionsJob failed', \Mockery::subset([
-                'document_id' => $document->id,
-                'error' => 'Categorizer failed',
-            ]));
+            ->andReturnUsing(function (Document $doc, array $data, mixed $file) {
+                $doc->update($data);
+
+                return $doc;
+            });
 
         try {
-            (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $transactionService);
+            (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
             $this->fail('Expected RuntimeException was not thrown.');
         } catch (RuntimeException $e) {
             $this->assertSame('Categorizer failed', $e->getMessage());
         }
+
+        $this->assertDatabaseHas('documents', [
+            'id' => $document->id,
+            'status' => \App\Enums\DocumentStatus::Failed->value,
+        ]);
     }
 }

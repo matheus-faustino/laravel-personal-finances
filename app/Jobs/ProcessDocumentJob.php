@@ -23,7 +23,7 @@ class ProcessDocumentJob implements ShouldQueue
         try {
             $result = $agent->extract($this->document->file, 'local');
 
-            collect($result['transactions'])->each(fn (array $data) => $transactionService->create($this->document->client, [
+            collect($result['transactions'])->each(fn (array $data) => $transactionService->create($this->document->user, [
                 'name' => $data['description'],
                 'value' => $data['value'],
                 'date' => $data['date'],

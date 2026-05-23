@@ -28,7 +28,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_list_users(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->getJson('/api/users')->assertForbidden();
     }
@@ -52,7 +52,7 @@ class UserTest extends TestCase
 
     public function test_client_can_view_own_profile(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $response = $this->actingAs($client)->getJson("/api/users/{$client->id}");
 
@@ -61,7 +61,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_view_another_users_profile(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $other = User::factory()->create();
 
         $this->actingAs($client)->getJson("/api/users/{$other->id}")->assertForbidden();
@@ -123,7 +123,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_create_a_user(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/users', [
             'name' => 'New User',
@@ -188,7 +188,7 @@ class UserTest extends TestCase
     public function test_admin_can_change_a_users_role(): void
     {
         $admin = User::factory()->admin()->create();
-        $user = User::factory()->client()->create();
+        $user = User::factory()->user()->create();
 
         $response = $this->actingAs($admin)->putJson("/api/users/{$user->id}", [
             'name' => $user->name,
@@ -202,7 +202,7 @@ class UserTest extends TestCase
 
     public function test_client_can_update_own_profile(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $response = $this->actingAs($client)->putJson("/api/users/{$client->id}", [
             'name' => 'Updated Name',
@@ -215,7 +215,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_update_another_users_profile(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $other = User::factory()->create(['name' => 'Unchanged']);
 
         $this->actingAs($client)->putJson("/api/users/{$other->id}", [
@@ -228,7 +228,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_change_own_role(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $response = $this->actingAs($client)->putJson("/api/users/{$client->id}", [
             'name' => $client->name,
@@ -237,7 +237,7 @@ class UserTest extends TestCase
         ]);
 
         $response->assertOk();
-        $this->assertDatabaseHas('users', ['id' => $client->id, 'role' => Role::Client->value]);
+        $this->assertDatabaseHas('users', ['id' => $client->id, 'role' => Role::User->value]);
     }
 
     public function test_update_fails_with_email_from_another_user(): void
@@ -267,7 +267,7 @@ class UserTest extends TestCase
 
     public function test_client_can_update_own_password(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->putJson("/api/users/{$client->id}", [
             'name' => $client->name,
@@ -302,7 +302,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_delete_any_user(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $other = User::factory()->create();
 
         $this->actingAs($client)->deleteJson("/api/users/{$other->id}")->assertForbidden();
@@ -311,7 +311,7 @@ class UserTest extends TestCase
 
     public function test_client_cannot_delete_own_account(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->deleteJson("/api/users/{$client->id}")->assertForbidden();
         $this->assertDatabaseHas('users', ['id' => $client->id]);

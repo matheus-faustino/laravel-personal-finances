@@ -32,8 +32,8 @@ class DocumentServiceTest extends TestCase
     public function test_get_all_for_user_returns_all_documents_for_admin(): void
     {
         $admin = User::factory()->admin()->create();
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Document::factory()->count(2)->create(['user_id' => $clientA->id]);
         Document::factory()->count(3)->create(['user_id' => $clientB->id]);
@@ -45,8 +45,8 @@ class DocumentServiceTest extends TestCase
 
     public function test_get_all_for_user_returns_only_own_documents_for_client(): void
     {
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Document::factory()->count(3)->create(['user_id' => $clientA->id]);
         Document::factory()->count(2)->create(['user_id' => $clientB->id]);
@@ -67,7 +67,7 @@ class DocumentServiceTest extends TestCase
 
     public function test_create_stores_file_and_persists_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $file = UploadedFile::fake()->create('test.pdf', 100, 'application/pdf');
 
         $result = $this->service->create($client, ['name' => 'My Doc'], $file);
@@ -80,8 +80,8 @@ class DocumentServiceTest extends TestCase
 
     public function test_create_forces_user_id_to_authenticated_user(): void
     {
-        $client = User::factory()->client()->create();
-        $other = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
+        $other = User::factory()->user()->create();
         $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
 
         $result = $this->service->create($client, ['name' => 'Spoofed', 'user_id' => $other->id], $file);
@@ -92,7 +92,7 @@ class DocumentServiceTest extends TestCase
 
     public function test_create_stores_file_under_correct_directory(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
 
         $result = $this->service->create($client, ['name' => 'Dir Test'], $file);
@@ -113,7 +113,7 @@ class DocumentServiceTest extends TestCase
 
     public function test_update_replaces_file_when_new_file_provided(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/old.pdf", 'old content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -139,7 +139,7 @@ class DocumentServiceTest extends TestCase
 
     public function test_delete_removes_document_record_and_file(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/file.pdf", 'content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -155,7 +155,7 @@ class DocumentServiceTest extends TestCase
 
     public function test_create_dispatches_process_and_categorize_job_chain(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
 
         $this->service->create($client, ['name' => 'My Doc'], $file);

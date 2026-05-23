@@ -4,22 +4,19 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResendVerificationRequest;
+use App\Interfaces\UserServiceInterface;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
+    public function __construct(private readonly UserServiceInterface $userService) {}
+
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
-        ]);
-
-        $user->sendEmailVerificationNotification();
+        $this->userService->create($request->validated());
 
         return response()->json(
             ['message' => __('auth.register_success')],
@@ -27,7 +24,7 @@ class RegisterController extends Controller
         );
     }
 
-    public function verify(Request $request, int $id, string $hash): JsonResponse
+    public function verify(int $id, string $hash): JsonResponse
     {
         $user = User::findOrFail($id);
 
@@ -46,10 +43,8 @@ class RegisterController extends Controller
         return response()->json(['message' => __('auth.email_verified')]);
     }
 
-    public function resendVerification(Request $request): JsonResponse
+    public function resendVerification(ResendVerificationRequest $request): JsonResponse
     {
-        $request->validate(['email' => ['required', 'string', 'email']]);
-
         $user = User::where('email', $request->email)->first();
 
         if ($user && ! $user->hasVerifiedEmail()) {

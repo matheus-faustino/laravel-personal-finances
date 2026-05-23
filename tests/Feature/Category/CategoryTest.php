@@ -25,7 +25,7 @@ class CategoryTest extends TestCase
 
     public function test_client_can_list_categories(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Category::factory()->count(2)->create();
 
         $response = $this->actingAs($client)->getJson('/api/categories');
@@ -52,7 +52,7 @@ class CategoryTest extends TestCase
 
     public function test_client_can_show_a_category(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $category = Category::factory()->create();
 
         $response = $this->actingAs($client)->getJson("/api/categories/{$category->id}");
@@ -88,7 +88,7 @@ class CategoryTest extends TestCase
 
     public function test_client_cannot_create_a_category(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/categories', ['name' => 'Electronics'])->assertForbidden();
         $this->assertDatabaseMissing('categories', ['name' => 'Electronics']);
@@ -121,7 +121,7 @@ class CategoryTest extends TestCase
 
     public function test_client_cannot_update_a_category(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $category = Category::factory()->create(['name' => 'Old Name']);
 
         $this->actingAs($client)->putJson("/api/categories/{$category->id}", ['name' => 'New Name'])->assertForbidden();
@@ -156,7 +156,7 @@ class CategoryTest extends TestCase
 
     public function test_client_cannot_delete_a_category(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $category = Category::factory()->create();
 
         $this->actingAs($client)->deleteJson("/api/categories/{$category->id}")->assertForbidden();

@@ -40,9 +40,15 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
-        Gate::authorize('view-user', $user);
+        Gate::authorize('update-user', $user);
 
-        return new UserResource($this->userService->update($user, $request->validated()));
+        $data = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            unset($data['role']);
+        }
+
+        return new UserResource($this->userService->update($user, $data));
     }
 
     public function destroy(User $user): JsonResponse

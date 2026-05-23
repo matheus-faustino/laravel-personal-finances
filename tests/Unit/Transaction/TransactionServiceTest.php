@@ -27,8 +27,8 @@ class TransactionServiceTest extends TestCase
     public function test_get_all_for_user_returns_all_transactions_for_admin(): void
     {
         $admin = User::factory()->admin()->create();
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Transaction::factory()->count(2)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(3)->create(['user_id' => $clientB->id]);
@@ -40,8 +40,8 @@ class TransactionServiceTest extends TestCase
 
     public function test_get_all_for_user_returns_only_own_transactions_for_client(): void
     {
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Transaction::factory()->count(3)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(2)->create(['user_id' => $clientB->id]);
@@ -101,7 +101,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_create_forces_user_id_to_authenticated_user(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $category = Category::factory()->create();
 
         $data = [
@@ -119,8 +119,8 @@ class TransactionServiceTest extends TestCase
 
     public function test_create_overrides_spoofed_user_id_for_client(): void
     {
-        $client = User::factory()->client()->create();
-        $other = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
+        $other = User::factory()->user()->create();
         $category = Category::factory()->create();
 
         $data = [

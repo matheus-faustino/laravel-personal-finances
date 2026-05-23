@@ -20,7 +20,7 @@ class TransactionFactory extends Factory
             'date' => fake()->date(),
             'value' => fake()->randomFloat(2, 1, 10000),
             'category_id' => Category::factory(),
-            'user_id' => User::factory()->client(),
+            'user_id' => User::factory()->user(),
             'document_id' => null,
         ];
     }

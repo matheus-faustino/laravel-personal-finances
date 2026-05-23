@@ -35,9 +35,9 @@ class User extends Authenticatable implements CanResetPassword, MustVerifyEmail
         return $this->role === Role::Admin;
     }
 
-    public function isClient(): bool
+    public function isUser(): bool
     {
-        return $this->role === Role::Client;
+        return $this->role === Role::User;
     }
 
     public function transactions(): HasMany

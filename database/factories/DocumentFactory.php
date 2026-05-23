@@ -18,7 +18,7 @@ class DocumentFactory extends Factory
             'name' => fake()->sentence(3),
             'description' => fake()->optional()->paragraph(),
             'file' => 'documents/0/'.fake()->uuid().'.pdf',
-            'user_id' => User::factory()->client(),
+            'user_id' => User::factory()->user(),
             'status' => DocumentStatus::Uploaded,
         ];
     }

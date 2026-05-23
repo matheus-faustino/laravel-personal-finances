@@ -27,7 +27,7 @@ class Transaction extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function client(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }

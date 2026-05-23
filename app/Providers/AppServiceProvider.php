@@ -56,13 +56,15 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::define(
-            'delete-user',
-            fn (User $user, User $target): bool => $user->isAdmin()
+            'update-user',
+            fn (User $user, User $target): bool => $user->isAdmin() || $user->id === $target->id
         );
+
+        Gate::define('delete-user', fn (User $user): bool => $user->isAdmin());
 
         Gate::define('manage-categories', fn (User $user): bool => $user->isAdmin());
 
-        Gate::define('create-transaction', fn (User $user): bool => $user->isClient());
+        Gate::define('create-transaction', fn (User $user): bool => $user->isUser());
 
         Gate::define(
             'view-transaction',
@@ -74,7 +76,7 @@ class AppServiceProvider extends ServiceProvider
             fn (User $user, Transaction $transaction): bool => $transaction->user_id === $user->id
         );
 
-        Gate::define('create-document', fn (User $user): bool => $user->isClient());
+        Gate::define('create-document', fn (User $user): bool => $user->isUser());
 
         Gate::define(
             'view-document',

@@ -28,8 +28,8 @@ class TransactionTest extends TestCase
     public function test_admin_can_list_all_transactions(): void
     {
         $admin = User::factory()->admin()->create();
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Transaction::factory()->count(2)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(3)->create(['user_id' => $clientB->id]);
@@ -41,8 +41,8 @@ class TransactionTest extends TestCase
 
     public function test_client_can_only_list_their_own_transactions(): void
     {
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Transaction::factory()->count(3)->create(['user_id' => $clientA->id]);
         Transaction::factory()->count(2)->create(['user_id' => $clientB->id]);
@@ -71,7 +71,7 @@ class TransactionTest extends TestCase
 
     public function test_client_can_show_their_own_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id, 'name' => 'My Transaction']);
 
         $this->actingAs($client)->getJson("/api/transactions/{$transaction->id}")
@@ -81,7 +81,7 @@ class TransactionTest extends TestCase
 
     public function test_client_cannot_show_another_clients_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $other = Transaction::factory()->create();
 
         $this->actingAs($client)->getJson("/api/transactions/{$other->id}")->assertForbidden();
@@ -105,7 +105,7 @@ class TransactionTest extends TestCase
 
     public function test_client_can_create_their_own_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $payload = $this->validPayload();
 
         $this->actingAs($client)->postJson('/api/transactions', $payload)
@@ -116,8 +116,8 @@ class TransactionTest extends TestCase
 
     public function test_user_id_is_always_assigned_from_the_authenticated_user(): void
     {
-        $client = User::factory()->client()->create();
-        $other = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
+        $other = User::factory()->user()->create();
         $payload = $this->validPayload(['user_id' => $other->id]);
 
         $this->actingAs($client)->postJson('/api/transactions', $payload)
@@ -142,7 +142,7 @@ class TransactionTest extends TestCase
 
     public function test_store_requires_name(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['name' => '']))
             ->assertUnprocessable()
@@ -151,7 +151,7 @@ class TransactionTest extends TestCase
 
     public function test_store_requires_date(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['date' => '']))
             ->assertUnprocessable()
@@ -160,7 +160,7 @@ class TransactionTest extends TestCase
 
     public function test_store_requires_value(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['value' => '']))
             ->assertUnprocessable()
@@ -169,7 +169,7 @@ class TransactionTest extends TestCase
 
     public function test_store_rejects_negative_value(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['value' => -1]))
             ->assertUnprocessable()
@@ -178,7 +178,7 @@ class TransactionTest extends TestCase
 
     public function test_store_requires_category_id(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['category_id' => '']))
             ->assertUnprocessable()
@@ -187,7 +187,7 @@ class TransactionTest extends TestCase
 
     public function test_store_validates_category_id_exists(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/transactions', $this->validPayload(['category_id' => 99999]))
             ->assertUnprocessable()
@@ -196,7 +196,7 @@ class TransactionTest extends TestCase
 
     public function test_store_accepts_nullable_description(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $payload = $this->validPayload(['description' => null]);
 
         $this->actingAs($client)->postJson('/api/transactions', $payload)
@@ -209,7 +209,7 @@ class TransactionTest extends TestCase
 
     public function test_client_can_update_their_own_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id, 'name' => 'Old Name']);
         $category = Category::factory()->create();
 
@@ -225,7 +225,7 @@ class TransactionTest extends TestCase
 
     public function test_client_cannot_update_another_clients_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['name' => 'Original']);
         $category = Category::factory()->create();
 
@@ -264,7 +264,7 @@ class TransactionTest extends TestCase
 
     public function test_update_requires_name(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/transactions/{$transaction->id}", [
@@ -276,7 +276,7 @@ class TransactionTest extends TestCase
 
     public function test_update_requires_date(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/transactions/{$transaction->id}", [
@@ -288,7 +288,7 @@ class TransactionTest extends TestCase
 
     public function test_update_requires_value(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/transactions/{$transaction->id}", [
@@ -300,7 +300,7 @@ class TransactionTest extends TestCase
 
     public function test_update_requires_category_id(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/transactions/{$transaction->id}", [
@@ -312,7 +312,7 @@ class TransactionTest extends TestCase
 
     public function test_update_validates_category_id_exists(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/transactions/{$transaction->id}", [
@@ -327,7 +327,7 @@ class TransactionTest extends TestCase
 
     public function test_client_can_delete_their_own_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->deleteJson("/api/transactions/{$transaction->id}")->assertNoContent();
@@ -336,7 +336,7 @@ class TransactionTest extends TestCase
 
     public function test_client_cannot_delete_another_clients_transaction(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $transaction = Transaction::factory()->create();
 
         $this->actingAs($client)->deleteJson("/api/transactions/{$transaction->id}")->assertForbidden();

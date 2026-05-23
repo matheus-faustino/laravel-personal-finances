@@ -33,7 +33,7 @@ class ProcessDocumentJobTest extends TestCase
     {
         Bus::fake();
 
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/documents', [
             'name' => 'Test Invoice',
@@ -122,7 +122,7 @@ class ProcessDocumentJobTest extends TestCase
         $transactionService = $this->mock(TransactionServiceInterface::class);
         $transactionService->shouldReceive('create')
             ->once()
-            ->with($document->client, [
+            ->with($document->user, [
                 'name' => 'Internet service',
                 'value' => 99.90,
                 'date' => '2026-05-01',
@@ -130,7 +130,7 @@ class ProcessDocumentJobTest extends TestCase
             ]);
         $transactionService->shouldReceive('create')
             ->once()
-            ->with($document->client, [
+            ->with($document->user, [
                 'name' => 'Cloud storage',
                 'value' => 29.90,
                 'date' => '2026-05-05',

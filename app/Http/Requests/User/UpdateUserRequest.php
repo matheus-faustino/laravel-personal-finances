@@ -24,16 +24,4 @@ class UpdateUserRequest extends FormRequest
             'role' => ['sometimes', Rule::enum(Role::class)],
         ];
     }
-
-    /** @return array<string, mixed> */
-    public function validated($key = null, $default = null): array
-    {
-        $data = parent::validated($key, $default);
-
-        if (! $this->user()->isAdmin()) {
-            unset($data['role']);
-        }
-
-        return $data;
-    }
 }

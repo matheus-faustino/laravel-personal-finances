@@ -16,11 +16,14 @@ class Document extends Model
     /** @use HasFactory<DocumentFactory> */
     use HasFactory;
 
-    protected $casts = [
-        'status' => DocumentStatus::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'status' => DocumentStatus::class,
+        ];
+    }
 
-    public function client(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }

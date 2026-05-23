@@ -37,8 +37,8 @@ class DocumentTest extends TestCase
     public function test_admin_can_list_all_documents(): void
     {
         $admin = User::factory()->admin()->create();
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Document::factory()->count(2)->create(['user_id' => $clientA->id]);
         Document::factory()->count(3)->create(['user_id' => $clientB->id]);
@@ -50,8 +50,8 @@ class DocumentTest extends TestCase
 
     public function test_client_can_only_list_their_own_documents(): void
     {
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
 
         Document::factory()->count(3)->create(['user_id' => $clientA->id]);
         Document::factory()->count(2)->create(['user_id' => $clientB->id]);
@@ -80,7 +80,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_show_their_own_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $document = Document::factory()->create(['user_id' => $client->id, 'name' => 'My Doc']);
 
         $this->actingAs($client)->getJson("/api/documents/{$document->id}")
@@ -90,7 +90,7 @@ class DocumentTest extends TestCase
 
     public function test_client_cannot_show_another_clients_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $other = Document::factory()->create();
 
         $this->actingAs($client)->getJson("/api/documents/{$other->id}")->assertForbidden();
@@ -114,7 +114,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_create_a_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/documents', $this->validPayload())
             ->assertCreated();
@@ -126,8 +126,8 @@ class DocumentTest extends TestCase
 
     public function test_user_id_is_always_assigned_from_authenticated_user(): void
     {
-        $client = User::factory()->client()->create();
-        $other = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
+        $other = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/documents', $this->validPayload(['user_id' => $other->id]))
             ->assertCreated();
@@ -151,7 +151,7 @@ class DocumentTest extends TestCase
 
     public function test_store_requires_name(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/documents', $this->validPayload(['name' => '']))
             ->assertUnprocessable()
@@ -160,7 +160,7 @@ class DocumentTest extends TestCase
 
     public function test_store_requires_file(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $payload = ['name' => 'Test Document', 'description' => 'A test description'];
 
         $this->actingAs($client)->postJson('/api/documents', $payload)
@@ -170,7 +170,7 @@ class DocumentTest extends TestCase
 
     public function test_store_rejects_file_exceeding_10mb(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
 
         $this->actingAs($client)->postJson('/api/documents', $this->validPayload([
             'file' => UploadedFile::fake()->create('big.pdf', 10241, 'application/pdf'),
@@ -179,7 +179,7 @@ class DocumentTest extends TestCase
 
     public function test_store_accepts_nullable_description(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $payload = $this->validPayload(['description' => null]);
 
         $this->actingAs($client)->postJson('/api/documents', $payload)->assertCreated();
@@ -191,7 +191,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_update_their_own_document_without_new_file(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $document = Document::factory()->create(['user_id' => $client->id, 'name' => 'Old Name']);
         $originalFile = $document->file;
 
@@ -206,7 +206,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_update_their_own_document_with_new_file(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/old.pdf", 'old content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -225,7 +225,7 @@ class DocumentTest extends TestCase
 
     public function test_client_cannot_update_another_clients_document(): void
     {
-        $clientA = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
         $document = Document::factory()->create(['name' => 'Original']);
 
         $this->actingAs($clientA)->putJson("/api/documents/{$document->id}", [
@@ -256,7 +256,7 @@ class DocumentTest extends TestCase
 
     public function test_update_requires_name(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $document = Document::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/documents/{$document->id}", ['name' => ''])
@@ -266,7 +266,7 @@ class DocumentTest extends TestCase
 
     public function test_update_rejects_file_exceeding_10mb_when_provided(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         $document = Document::factory()->create(['user_id' => $client->id]);
 
         $this->actingAs($client)->putJson("/api/documents/{$document->id}", [
@@ -279,7 +279,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_delete_their_own_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/file.pdf", 'content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -295,7 +295,7 @@ class DocumentTest extends TestCase
 
     public function test_client_cannot_delete_another_clients_document(): void
     {
-        $clientA = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
         $document = Document::factory()->create();
 
         $this->actingAs($clientA)->deleteJson("/api/documents/{$document->id}")->assertForbidden();
@@ -324,7 +324,7 @@ class DocumentTest extends TestCase
 
     public function test_client_can_download_their_own_document(): void
     {
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/file.pdf", 'dummy content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -339,7 +339,7 @@ class DocumentTest extends TestCase
     public function test_admin_can_download_any_document(): void
     {
         $admin = User::factory()->admin()->create();
-        $client = User::factory()->client()->create();
+        $client = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$client->id}/file.pdf", 'dummy content');
         $document = Document::factory()->create([
             'user_id' => $client->id,
@@ -353,8 +353,8 @@ class DocumentTest extends TestCase
 
     public function test_client_cannot_download_another_clients_document(): void
     {
-        $clientA = User::factory()->client()->create();
-        $clientB = User::factory()->client()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
         Storage::disk('local')->put("documents/{$clientB->id}/file.pdf", 'dummy content');
         $document = Document::factory()->create([
             'user_id' => $clientB->id,

@@ -43,7 +43,7 @@ class ProcessDocumentJobTest extends TestCase
         Bus::assertChained([ProcessDocumentJob::class, CategorizeTransactionsJob::class]);
     }
 
-    public function test_job_sets_document_status_to_processing_then_processed(): void
+    public function test_job_sets_document_status_to_processing_during_extraction(): void
     {
         $document = Document::factory()->create(['status' => DocumentStatus::Uploaded]);
 
@@ -75,7 +75,7 @@ class ProcessDocumentJobTest extends TestCase
 
         $this->assertDatabaseHas('documents', [
             'id' => $document->id,
-            'status' => DocumentStatus::Processed->value,
+            'status' => DocumentStatus::Processing->value,
         ]);
     }
 

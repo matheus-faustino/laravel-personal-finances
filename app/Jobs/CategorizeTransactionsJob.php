@@ -23,6 +23,8 @@ class CategorizeTransactionsJob implements ShouldQueue
         $transactions = $transactionService->getAllForDocument($this->document);
 
         if ($transactions->isEmpty()) {
+            $documentService->update($this->document, ['status' => DocumentStatus::Processed], null);
+
             return;
         }
 
@@ -37,6 +39,8 @@ class CategorizeTransactionsJob implements ShouldQueue
 
                 $transactionService->update($transaction, ['category_id' => $data['category_id'] ?? null]);
             }
+
+            $documentService->update($this->document, ['status' => DocumentStatus::Processed], null);
         } catch (\Throwable $e) {
             $documentService->update($this->document, ['status' => DocumentStatus::Failed], null);
 

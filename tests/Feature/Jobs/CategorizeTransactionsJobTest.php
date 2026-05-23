@@ -3,6 +3,7 @@
 namespace Tests\Feature\Jobs;
 
 use App\Ai\Agents\TransactionCategorizerAgent;
+use App\Enums\DocumentStatus;
 use App\Interfaces\CategoryServiceInterface;
 use App\Interfaces\DocumentServiceInterface;
 use App\Interfaces\TransactionServiceInterface;
@@ -46,6 +47,9 @@ class CategorizeTransactionsJobTest extends TestCase
 
         /** @var DocumentServiceInterface&MockInterface $documentService */
         $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null);
 
         /** @var TransactionServiceInterface&MockInterface $transactionService */
         $transactionService = $this->mock(TransactionServiceInterface::class);
@@ -105,6 +109,9 @@ class CategorizeTransactionsJobTest extends TestCase
 
         /** @var DocumentServiceInterface&MockInterface $documentService */
         $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null);
 
         (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
@@ -148,6 +155,9 @@ class CategorizeTransactionsJobTest extends TestCase
 
         /** @var DocumentServiceInterface&MockInterface $documentService */
         $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null);
 
         (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
     }
@@ -174,8 +184,84 @@ class CategorizeTransactionsJobTest extends TestCase
 
         /** @var DocumentServiceInterface&MockInterface $documentService */
         $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null);
 
         (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
+    }
+
+    public function test_job_sets_document_status_to_processed_after_categorization(): void
+    {
+        /** @var Document $document */
+        $document = Document::factory()->create(['status' => DocumentStatus::Processing]);
+        $transactions = Transaction::factory()->count(1)->create(['document_id' => $document->id]);
+
+        /** @var TransactionCategorizerAgent&MockInterface $agent */
+        $agent = $this->mock(TransactionCategorizerAgent::class);
+        $agent->shouldReceive('categorize')->andReturn([]);
+
+        /** @var CategoryServiceInterface&MockInterface $categoryService */
+        $categoryService = $this->mock(CategoryServiceInterface::class);
+        $categoryService->shouldReceive('getAll')->andReturn(new Collection);
+
+        /** @var TransactionServiceInterface&MockInterface $transactionService */
+        $transactionService = $this->mock(TransactionServiceInterface::class);
+        $transactionService->shouldReceive('getAllForDocument')->with($document)->andReturn($transactions);
+
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null)
+            ->andReturnUsing(function (Document $doc, array $data, mixed $file) {
+                $doc->update($data);
+
+                return $doc;
+            });
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
+
+        $this->assertDatabaseHas('documents', [
+            'id' => $document->id,
+            'status' => DocumentStatus::Processed->value,
+        ]);
+    }
+
+    public function test_job_sets_document_status_to_processed_when_no_transactions(): void
+    {
+        /** @var Document $document */
+        $document = Document::factory()->create(['status' => DocumentStatus::Processing]);
+
+        /** @var TransactionCategorizerAgent&MockInterface $agent */
+        $agent = $this->mock(TransactionCategorizerAgent::class);
+        $agent->shouldNotReceive('categorize');
+
+        /** @var CategoryServiceInterface&MockInterface $categoryService */
+        $categoryService = $this->mock(CategoryServiceInterface::class);
+        $categoryService->shouldNotReceive('getAll');
+
+        /** @var TransactionServiceInterface&MockInterface $transactionService */
+        $transactionService = $this->mock(TransactionServiceInterface::class);
+        $transactionService->shouldReceive('getAllForDocument')->with($document)->andReturn(new Collection);
+
+        /** @var DocumentServiceInterface&MockInterface $documentService */
+        $documentService = $this->mock(DocumentServiceInterface::class);
+        $documentService->shouldReceive('update')
+            ->once()
+            ->with($document, ['status' => DocumentStatus::Processed], null)
+            ->andReturnUsing(function (Document $doc, array $data, mixed $file) {
+                $doc->update($data);
+
+                return $doc;
+            });
+
+        (new CategorizeTransactionsJob($document))->handle($agent, $categoryService, $documentService, $transactionService);
+
+        $this->assertDatabaseHas('documents', [
+            'id' => $document->id,
+            'status' => DocumentStatus::Processed->value,
+        ]);
     }
 
     public function test_job_sets_document_status_to_failed_and_rethrows_when_agent_throws(): void
@@ -220,7 +306,7 @@ class CategorizeTransactionsJobTest extends TestCase
 
         $this->assertDatabaseHas('documents', [
             'id' => $document->id,
-            'status' => \App\Enums\DocumentStatus::Failed->value,
+            'status' => DocumentStatus::Failed->value,
         ]);
     }
 }

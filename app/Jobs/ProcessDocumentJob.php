@@ -29,8 +29,6 @@ class ProcessDocumentJob implements ShouldQueue
                 'date' => $data['date'],
                 'document_id' => $this->document->id,
             ]));
-
-            $documentService->update($this->document, ['status' => DocumentStatus::Processed], null);
         } catch (\Throwable $e) {
             $documentService->update($this->document, ['status' => DocumentStatus::Failed], null);
 

@@ -4,17 +4,18 @@ namespace App\Interfaces;
 
 use App\Models\Document;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 
 interface DocumentServiceInterface
 {
     /**
-     * Returns all documents accessible by the given user.
+     * Returns a paginated list of documents accessible by the given user,
+     * optionally filtered by date range on the `created_at` column.
      *
-     * @return Collection<int, Document>
+     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null}  $filters
      */
-    public function getAllForUser(User $user): Collection;
+    public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator;
 
     /**
      * Creates and persists a new document for the given user, storing the uploaded file.

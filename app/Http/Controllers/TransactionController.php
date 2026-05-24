@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Transaction\IndexTransactionRequest;
 use App\Http\Requests\Transaction\StoreTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Interfaces\TransactionServiceInterface;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -16,9 +16,11 @@ class TransactionController extends Controller
 {
     public function __construct(private readonly TransactionServiceInterface $transactionService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(IndexTransactionRequest $request): AnonymousResourceCollection
     {
-        return TransactionResource::collection($this->transactionService->getAllForUser($request->user()));
+        return TransactionResource::collection(
+            $this->transactionService->getAllForUser($request->user(), $request->validated())
+        );
     }
 
     public function show(Transaction $transaction): TransactionResource

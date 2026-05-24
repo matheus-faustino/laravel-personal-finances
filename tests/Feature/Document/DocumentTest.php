@@ -45,7 +45,8 @@ class DocumentTest extends TestCase
 
         $this->actingAs($admin)->getJson('/api/documents')
             ->assertOk()
-            ->assertJsonCount(5, 'data');
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure(['data', 'links', 'meta']);
     }
 
     public function test_client_can_only_list_their_own_documents(): void
@@ -58,12 +59,90 @@ class DocumentTest extends TestCase
 
         $this->actingAs($clientA)->getJson('/api/documents')
             ->assertOk()
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data')
+            ->assertJsonStructure(['data', 'links', 'meta']);
     }
 
     public function test_unauthenticated_user_cannot_list_documents(): void
     {
         $this->getJson('/api/documents')->assertUnauthorized();
+    }
+
+    // --- index filters ---
+
+    public function test_index_filters_documents_by_start_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-01-15']);
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/documents?start_date=2026-02-01')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_filters_documents_by_end_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-01-15']);
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/documents?end_date=2026-02-28')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_filters_documents_by_date_range(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2025-12-01']);
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-01-15']);
+        Document::factory()->create(['user_id' => $client->id, 'created_at' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/documents?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_paginates_documents_with_custom_per_page(): void
+    {
+        $client = User::factory()->user()->create();
+        Document::factory()->count(10)->create(['user_id' => $client->id]);
+
+        $this->actingAs($client)->getJson('/api/documents?per_page=3')
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonFragment(['total' => 10]);
+    }
+
+    public function test_index_rejects_invalid_per_page(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/documents?per_page=0')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['per_page']);
+    }
+
+    public function test_index_rejects_invalid_date_format(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/documents?start_date=15-01-2026')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start_date']);
+    }
+
+    public function test_index_rejects_end_date_before_start_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/documents?start_date=2026-03-01&end_date=2026-01-01')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['end_date']);
     }
 
     // --- show ---

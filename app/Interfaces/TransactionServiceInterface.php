@@ -5,16 +5,18 @@ namespace App\Interfaces;
 use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 interface TransactionServiceInterface
 {
     /**
-     * Returns all transactions accessible by the given user.
+     * Returns a paginated list of transactions accessible by the given user,
+     * optionally filtered by date range on the `date` column and by category.
      *
-     * @return Collection<int, Transaction>
+     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, category_id?: int|null}  $filters
      */
-    public function getAllForUser(User $user): Collection;
+    public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator;
 
     /**
      * Returns all transactions belonging to the given document.

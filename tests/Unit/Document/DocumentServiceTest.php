@@ -7,6 +7,7 @@ use App\Jobs\CategorizeTransactionsJob;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\Document;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -40,6 +41,7 @@ class DocumentServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($admin);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(5, $result);
     }
 
@@ -53,6 +55,7 @@ class DocumentServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($clientA);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(3, $result);
     }
 
@@ -62,7 +65,67 @@ class DocumentServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($admin);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(0, $result);
+    }
+
+    public function test_get_all_for_user_filters_by_start_date(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Document::factory()->create(['created_at' => '2026-01-15']);
+        Document::factory()->create(['created_at' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['start_date' => '2026-02-01']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_filters_by_end_date(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Document::factory()->create(['created_at' => '2026-01-15']);
+        Document::factory()->create(['created_at' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['end_date' => '2026-02-28']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_filters_by_date_range(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Document::factory()->create(['created_at' => '2025-12-01']);
+        Document::factory()->create(['created_at' => '2026-01-15']);
+        Document::factory()->create(['created_at' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['start_date' => '2026-01-01', 'end_date' => '2026-01-31']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_paginates_results(): void
+    {
+        $client = User::factory()->user()->create();
+        Document::factory()->count(20)->create(['user_id' => $client->id]);
+
+        $result = $this->service->getAllForUser($client, ['per_page' => 5]);
+
+        $this->assertCount(5, $result);
+        $this->assertSame(20, $result->total());
+    }
+
+    public function test_get_all_for_user_uses_default_per_page_of_15(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Document::factory()->count(20)->create();
+
+        $result = $this->service->getAllForUser($admin);
+
+        $this->assertCount(15, $result);
+        $this->assertSame(20, $result->total());
     }
 
     public function test_create_stores_file_and_persists_document(): void

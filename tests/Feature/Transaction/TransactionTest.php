@@ -36,7 +36,8 @@ class TransactionTest extends TestCase
 
         $this->actingAs($admin)->getJson('/api/transactions')
             ->assertOk()
-            ->assertJsonCount(5, 'data');
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure(['data', 'links', 'meta']);
     }
 
     public function test_client_can_only_list_their_own_transactions(): void
@@ -49,12 +50,113 @@ class TransactionTest extends TestCase
 
         $this->actingAs($clientA)->getJson('/api/transactions')
             ->assertOk()
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data')
+            ->assertJsonStructure(['data', 'links', 'meta']);
     }
 
     public function test_unauthenticated_user_cannot_list_transactions(): void
     {
         $this->getJson('/api/transactions')->assertUnauthorized();
+    }
+
+    // --- index filters ---
+
+    public function test_index_filters_transactions_by_start_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-01-15']);
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/transactions?start_date=2026-02-01')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_filters_transactions_by_end_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-01-15']);
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/transactions?end_date=2026-02-28')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_filters_transactions_by_date_range(): void
+    {
+        $client = User::factory()->user()->create();
+
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2025-12-01']);
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-01-15']);
+        Transaction::factory()->create(['user_id' => $client->id, 'date' => '2026-03-10']);
+
+        $this->actingAs($client)->getJson('/api/transactions?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_filters_transactions_by_category_id(): void
+    {
+        $client = User::factory()->user()->create();
+        $catA = Category::factory()->create();
+        $catB = Category::factory()->create();
+
+        Transaction::factory()->count(3)->create(['user_id' => $client->id, 'category_id' => $catA->id]);
+        Transaction::factory()->count(2)->create(['user_id' => $client->id, 'category_id' => $catB->id]);
+
+        $this->actingAs($client)->getJson("/api/transactions?category_id={$catA->id}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_rejects_nonexistent_category_id(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/transactions?category_id=99999')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['category_id']);
+    }
+
+    public function test_index_paginates_transactions_with_custom_per_page(): void
+    {
+        $client = User::factory()->user()->create();
+        Transaction::factory()->count(10)->create(['user_id' => $client->id]);
+
+        $this->actingAs($client)->getJson('/api/transactions?per_page=3')
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonFragment(['total' => 10]);
+    }
+
+    public function test_index_rejects_invalid_per_page(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/transactions?per_page=0')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['per_page']);
+    }
+
+    public function test_index_rejects_invalid_date_format(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/transactions?start_date=15-01-2026')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start_date']);
+    }
+
+    public function test_index_rejects_end_date_before_start_date(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/transactions?start_date=2026-03-01&end_date=2026-01-01')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['end_date']);
     }
 
     // --- show ---

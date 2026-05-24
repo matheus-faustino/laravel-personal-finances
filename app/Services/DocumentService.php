@@ -7,7 +7,7 @@ use App\Jobs\CategorizeTransactionsJob;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\Document;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
@@ -15,13 +15,21 @@ use Illuminate\Support\Facades\Storage;
 class DocumentService implements DocumentServiceInterface
 {
     /** {@inheritDoc} */
-    public function getAllForUser(User $user): Collection
+    public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator
     {
-        if ($user->isAdmin()) {
-            return Document::all();
+        $query = $user->isAdmin()
+            ? Document::query()
+            : Document::where('user_id', $user->id);
+
+        if (! empty($filters['start_date'])) {
+            $query->whereDate('created_at', '>=', $filters['start_date']);
         }
 
-        return Document::where('user_id', $user->id)->get();
+        if (! empty($filters['end_date'])) {
+            $query->whereDate('created_at', '<=', $filters['end_date']);
+        }
+
+        return $query->paginate(isset($filters['per_page']) ? (int) $filters['per_page'] : 15);
     }
 
     /** {@inheritDoc} */

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,6 +36,7 @@ class TransactionServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($admin);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(5, $result);
     }
 
@@ -48,6 +50,7 @@ class TransactionServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($clientA);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(3, $result);
     }
 
@@ -57,7 +60,84 @@ class TransactionServiceTest extends TestCase
 
         $result = $this->service->getAllForUser($admin);
 
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertCount(0, $result);
+    }
+
+    public function test_get_all_for_user_filters_by_start_date(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Transaction::factory()->create(['date' => '2026-01-15']);
+        Transaction::factory()->create(['date' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['start_date' => '2026-02-01']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_filters_by_end_date(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Transaction::factory()->create(['date' => '2026-01-15']);
+        Transaction::factory()->create(['date' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['end_date' => '2026-02-28']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_filters_by_date_range(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Transaction::factory()->create(['date' => '2025-12-01']);
+        Transaction::factory()->create(['date' => '2026-01-15']);
+        Transaction::factory()->create(['date' => '2026-03-10']);
+
+        $result = $this->service->getAllForUser($admin, ['start_date' => '2026-01-01', 'end_date' => '2026-01-31']);
+
+        $this->assertSame(1, $result->total());
+    }
+
+    public function test_get_all_for_user_filters_by_category_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $catA = Category::factory()->create();
+        $catB = Category::factory()->create();
+
+        Transaction::factory()->count(3)->create(['category_id' => $catA->id]);
+        Transaction::factory()->count(2)->create(['category_id' => $catB->id]);
+
+        $result = $this->service->getAllForUser($admin, ['category_id' => $catA->id]);
+
+        $this->assertSame(3, $result->total());
+        foreach ($result->items() as $item) {
+            $this->assertSame($catA->id, $item->category_id);
+        }
+    }
+
+    public function test_get_all_for_user_paginates_results(): void
+    {
+        $client = User::factory()->user()->create();
+        Transaction::factory()->count(20)->create(['user_id' => $client->id]);
+
+        $result = $this->service->getAllForUser($client, ['per_page' => 5]);
+
+        $this->assertCount(5, $result);
+        $this->assertSame(20, $result->total());
+    }
+
+    public function test_get_all_for_user_uses_default_per_page_of_15(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Transaction::factory()->count(20)->create();
+
+        $result = $this->service->getAllForUser($admin);
+
+        $this->assertCount(15, $result);
+        $this->assertSame(20, $result->total());
     }
 
     public function test_get_all_for_document_returns_only_transactions_for_that_document(): void

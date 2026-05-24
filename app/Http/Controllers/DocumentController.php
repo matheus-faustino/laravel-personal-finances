@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Document\IndexDocumentRequest;
 use App\Http\Requests\Document\StoreDocumentRequest;
 use App\Http\Requests\Document\UpdateDocumentRequest;
 use App\Http\Resources\DocumentResource;
 use App\Interfaces\DocumentServiceInterface;
 use App\Models\Document;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -18,9 +18,11 @@ class DocumentController extends Controller
 {
     public function __construct(private readonly DocumentServiceInterface $documentService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(IndexDocumentRequest $request): AnonymousResourceCollection
     {
-        return DocumentResource::collection($this->documentService->getAllForUser($request->user()));
+        return DocumentResource::collection(
+            $this->documentService->getAllForUser($request->user(), $request->validated())
+        );
     }
 
     public function show(Document $document): DocumentResource

@@ -255,4 +255,105 @@ class TransactionServiceTest extends TestCase
 
         $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
     }
+
+    public function test_bulk_update_updates_multiple_transactions(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transactions = Transaction::factory()->count(3)->create(['user_id' => $client->id]);
+
+        $updateData = $transactions->map(fn ($t) => [
+            'id' => $t->id,
+            'name' => 'Bulk Updated '.$t->id,
+            'description' => 'Updated desc',
+            'date' => '2026-06-01',
+            'value' => 999.99,
+            'category_id' => $category->id,
+        ])->toArray();
+
+        $result = $this->service->bulkUpdate($client, $updateData);
+
+        $this->assertCount(3, $result);
+        foreach ($result as $index => $transaction) {
+            $this->assertSame('Bulk Updated '.$transactions[$index]->id, $transaction->name);
+            $this->assertDatabaseHas('transactions', [
+                'id' => $transactions[$index]->id,
+                'name' => 'Bulk Updated '.$transactions[$index]->id,
+            ]);
+        }
+    }
+
+    public function test_bulk_update_rolls_back_on_authorization_failure(): void
+    {
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+        $category = Category::factory()->create();
+
+        $ownTransaction = Transaction::factory()->create(['user_id' => $clientA->id, 'name' => 'Original A']);
+        $otherTransaction = Transaction::factory()->create(['user_id' => $clientB->id, 'name' => 'Original B']);
+
+        $updateData = [
+            ['id' => $ownTransaction->id, 'name' => 'Updated A', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ['id' => $otherTransaction->id, 'name' => 'Updated B', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+        ];
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+
+        try {
+            $this->service->bulkUpdate($clientA, $updateData);
+        } finally {
+            $this->assertDatabaseHas('transactions', ['id' => $ownTransaction->id, 'name' => 'Original A']);
+            $this->assertDatabaseHas('transactions', ['id' => $otherTransaction->id, 'name' => 'Original B']);
+        }
+    }
+
+    public function test_bulk_update_does_not_change_user_id_or_document_id(): void
+    {
+        $client = User::factory()->user()->create();
+        $otherUser = User::factory()->user()->create();
+        $document = Document::factory()->create();
+        $category = Category::factory()->create();
+
+        $transaction = Transaction::factory()->create([
+            'user_id' => $client->id,
+            'document_id' => $document->id,
+        ]);
+
+        $updateData = [[
+            'id' => $transaction->id,
+            'name' => 'Updated Name',
+            'date' => '2026-01-01',
+            'value' => 100,
+            'category_id' => $category->id,
+            'user_id' => $otherUser->id,
+            'document_id' => null,
+        ]];
+
+        $this->service->bulkUpdate($client, $updateData);
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'user_id' => $client->id,
+            'document_id' => $document->id,
+        ]);
+    }
+
+    public function test_bulk_update_returns_transactions_with_category_loaded(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $updateData = [[
+            'id' => $transaction->id,
+            'name' => 'Updated',
+            'date' => '2026-01-01',
+            'value' => 50,
+            'category_id' => $category->id,
+        ]];
+
+        $result = $this->service->bulkUpdate($client, $updateData);
+
+        $this->assertTrue($result->first()->relationLoaded('category'));
+    }
 }

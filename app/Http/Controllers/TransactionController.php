@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Transaction\BulkUpdateTransactionRequest;
 use App\Http\Requests\Transaction\IndexTransactionRequest;
 use App\Http\Requests\Transaction\StoreTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
@@ -53,5 +54,12 @@ class TransactionController extends Controller
         $this->transactionService->delete($transaction);
 
         return response()->json(null, 204);
+    }
+
+    public function bulkUpdate(BulkUpdateTransactionRequest $request): AnonymousResourceCollection
+    {
+        return TransactionResource::collection(
+            $this->transactionService->bulkUpdate($request->user(), $request->validated('transactions'))
+        );
     }
 }

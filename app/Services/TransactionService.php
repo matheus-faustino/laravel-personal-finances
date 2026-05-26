@@ -6,8 +6,11 @@ use App\Interfaces\TransactionServiceInterface;
 use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class TransactionService implements TransactionServiceInterface
 {
@@ -65,5 +68,30 @@ class TransactionService implements TransactionServiceInterface
     public function delete(Transaction $transaction): void
     {
         $transaction->delete();
+    }
+
+    /** {@inheritDoc} */
+    public function bulkUpdate(User $user, array $transactionsData): Collection
+    {
+        return DB::transaction(function () use ($user, $transactionsData): Collection {
+            $updatedTransactions = [];
+
+            foreach ($transactionsData as $data) {
+                $transaction = Transaction::findOrFail($data['id']);
+
+                if (Gate::forUser($user)->denies('modify-transaction', $transaction)) {
+                    throw new AuthorizationException(
+                        "You are not authorized to modify transaction {$transaction->id}."
+                    );
+                }
+
+                $updateData = collect($data)->except(['id', 'user_id', 'document_id'])->toArray();
+
+                $transaction->update($updateData);
+                $updatedTransactions[] = $transaction;
+            }
+
+            return Collection::make($updatedTransactions)->load('category');
+        });
     }
 }

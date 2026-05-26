@@ -37,6 +37,8 @@ Route::get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('users', UserController::class)->names('users')->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::apiResource('categories', CategoryController::class)->names('categories');
+    Route::patch('transactions/bulk', [TransactionController::class, 'bulkUpdate'])
+        ->name('transactions.bulk-update');
     Route::apiResource('transactions', TransactionController::class)->names('transactions');
     Route::apiResource('documents', DocumentController::class)->names('documents');
     Route::get('documents/{document}/download', [DocumentController::class, 'download'])

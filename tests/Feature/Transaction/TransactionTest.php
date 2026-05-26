@@ -460,4 +460,224 @@ class TransactionTest extends TestCase
 
         $this->deleteJson("/api/transactions/{$transaction->id}")->assertUnauthorized();
     }
+
+    // --- bulk update ---
+
+    public function test_client_can_bulk_update_their_own_transactions(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transactions = Transaction::factory()->count(2)->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => $transactions->map(fn ($t) => [
+                'id' => $t->id,
+                'name' => 'Bulk Updated '.$t->id,
+                'description' => 'Updated description',
+                'date' => '2026-05-01',
+                'value' => 500.00,
+                'category_id' => $category->id,
+            ])->toArray(),
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'Bulk Updated '.$transactions[0]->id])
+            ->assertJsonFragment(['name' => 'Bulk Updated '.$transactions[1]->id]);
+
+        foreach ($transactions as $t) {
+            $this->assertDatabaseHas('transactions', ['id' => $t->id, 'name' => 'Bulk Updated '.$t->id]);
+        }
+    }
+
+    public function test_bulk_update_fails_if_any_transaction_not_owned(): void
+    {
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+        $category = Category::factory()->create();
+
+        $ownTx = Transaction::factory()->create(['user_id' => $clientA->id, 'name' => 'Original Own']);
+        $otherTx = Transaction::factory()->create(['user_id' => $clientB->id, 'name' => 'Original Other']);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $ownTx->id, 'name' => 'Updated Own', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+                ['id' => $otherTx->id, 'name' => 'Updated Other', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($clientA)->patchJson('/api/transactions/bulk', $payload)
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('transactions', ['id' => $ownTx->id, 'name' => 'Original Own']);
+        $this->assertDatabaseHas('transactions', ['id' => $otherTx->id, 'name' => 'Original Other']);
+    }
+
+    public function test_bulk_update_validates_transactions_array_required(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_id_required(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+
+        $payload = [
+            'transactions' => [
+                ['name' => 'No ID', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.id']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_id_exists(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+
+        $payload = [
+            'transactions' => [
+                ['id' => 99999, 'name' => 'Unknown', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.id']);
+    }
+
+    public function test_bulk_update_validates_no_duplicate_transaction_ids(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'First', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+                ['id' => $transaction->id, 'name' => 'Duplicate', 'date' => '2026-01-01', 'value' => 200, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.id', 'transactions.1.id']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_name_required(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.name']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_date_required(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'Test', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.date']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_value_required(): void
+    {
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'Test', 'date' => '2026-01-01', 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.value']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_category_id_required(): void
+    {
+        $client = User::factory()->user()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'Test', 'date' => '2026-01-01', 'value' => 100],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.category_id']);
+    }
+
+    public function test_bulk_update_validates_each_transaction_category_id_exists(): void
+    {
+        $client = User::factory()->user()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id]);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'Test', 'date' => '2026-01-01', 'value' => 100, 'category_id' => 99999],
+            ],
+        ];
+
+        $this->actingAs($client)->patchJson('/api/transactions/bulk', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transactions.0.category_id']);
+    }
+
+    public function test_admin_cannot_bulk_update_transactions(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $client = User::factory()->user()->create();
+        $category = Category::factory()->create();
+        $transaction = Transaction::factory()->create(['user_id' => $client->id, 'name' => 'Original']);
+
+        $payload = [
+            'transactions' => [
+                ['id' => $transaction->id, 'name' => 'Admin Updated', 'date' => '2026-01-01', 'value' => 100, 'category_id' => $category->id],
+            ],
+        ];
+
+        $this->actingAs($admin)->patchJson('/api/transactions/bulk', $payload)
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('transactions', ['id' => $transaction->id, 'name' => 'Original']);
+    }
+
+    public function test_unauthenticated_user_cannot_bulk_update_transactions(): void
+    {
+        $this->patchJson('/api/transactions/bulk', ['transactions' => []])
+            ->assertUnauthorized();
+    }
 }

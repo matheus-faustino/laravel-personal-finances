@@ -48,4 +48,15 @@ interface TransactionServiceInterface
      * Deletes the given transaction.
      */
     public function delete(Transaction $transaction): void;
+
+    /**
+     * Updates multiple transactions in a single database transaction.
+     * If any authorization or update fails, all changes are rolled back.
+     *
+     * @param  array<int, array{id: int, name: string, description?: string|null, date: string, value: numeric-string, category_id: int}>  $transactionsData
+     * @return Collection<int, Transaction>
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function bulkUpdate(User $user, array $transactionsData): Collection;
 }

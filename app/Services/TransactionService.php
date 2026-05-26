@@ -30,7 +30,7 @@ class TransactionService implements TransactionServiceInterface
             $query->where('category_id', (int) $filters['category_id']);
         }
 
-        return $query->paginate(isset($filters['per_page']) ? (int) $filters['per_page'] : 15);
+        return $query->with('category')->paginate(isset($filters['per_page']) ? (int) $filters['per_page'] : 15);
     }
 
     /** {@inheritDoc} */

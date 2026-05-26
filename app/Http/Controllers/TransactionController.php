@@ -27,7 +27,7 @@ class TransactionController extends Controller
     {
         Gate::authorize('view-transaction', $transaction);
 
-        return new TransactionResource($transaction);
+        return new TransactionResource($transaction->load('category'));
     }
 
     public function store(StoreTransactionRequest $request): JsonResponse
@@ -36,14 +36,14 @@ class TransactionController extends Controller
 
         $transaction = $this->transactionService->create($request->user(), $request->validated());
 
-        return (new TransactionResource($transaction))->response()->setStatusCode(201);
+        return (new TransactionResource($transaction->load('category')))->response()->setStatusCode(201);
     }
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction): TransactionResource
     {
         Gate::authorize('modify-transaction', $transaction);
 
-        return new TransactionResource($this->transactionService->update($transaction, $request->validated()));
+        return new TransactionResource($this->transactionService->update($transaction, $request->validated())->load('category'));
     }
 
     public function destroy(Transaction $transaction): JsonResponse

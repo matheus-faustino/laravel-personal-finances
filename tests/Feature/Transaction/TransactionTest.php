@@ -3,6 +3,7 @@
 namespace Tests\Feature\Transaction;
 
 use App\Models\Category;
+use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,6 +120,28 @@ class TransactionTest extends TestCase
         $this->actingAs($client)->getJson('/api/transactions?category_id=99999')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['category_id']);
+    }
+
+    public function test_index_filters_transactions_by_document_id(): void
+    {
+        $client = User::factory()->user()->create();
+        $document = Document::factory()->create(['user_id' => $client->id]);
+
+        Transaction::factory()->count(2)->create(['user_id' => $client->id, 'document_id' => $document->id]);
+        Transaction::factory()->count(3)->create(['user_id' => $client->id, 'document_id' => null]);
+
+        $this->actingAs($client)->getJson("/api/transactions?document_id={$document->id}")
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_index_rejects_nonexistent_document_id(): void
+    {
+        $client = User::factory()->user()->create();
+
+        $this->actingAs($client)->getJson('/api/transactions?document_id=99999')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['document_id']);
     }
 
     public function test_index_paginates_transactions_with_custom_per_page(): void

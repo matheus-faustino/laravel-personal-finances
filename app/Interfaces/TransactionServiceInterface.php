@@ -5,6 +5,7 @@ namespace App\Interfaces;
 use App\Models\Document;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -14,7 +15,7 @@ interface TransactionServiceInterface
      * Returns a paginated list of transactions accessible by the given user,
      * optionally filtered by date range on the `date` column and by category.
      *
-     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, category_id?: int|null}  $filters
+     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, category_id?: int|null, document_id?: int|null}  $filters
      */
     public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator;
 
@@ -56,7 +57,7 @@ interface TransactionServiceInterface
      * @param  array<int, array{id: int, name: string, description?: string|null, date: string, value: numeric-string, category_id: int}>  $transactionsData
      * @return Collection<int, Transaction>
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function bulkUpdate(User $user, array $transactionsData): Collection;
 }

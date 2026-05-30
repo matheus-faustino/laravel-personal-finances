@@ -29,6 +29,10 @@ class DocumentService implements DocumentServiceInterface
             $query->whereDate('created_at', '<=', $filters['end_date']);
         }
 
+        if ($user->isAdmin() && ! empty($filters['user_id'])) {
+            $query->where('user_id', (int) $filters['user_id']);
+        }
+
         return $query->paginate(isset($filters['per_page']) ? (int) $filters['per_page'] : 15);
     }
 

@@ -118,6 +118,42 @@ class DocumentTest extends TestCase
             ->assertJsonFragment(['total' => 10]);
     }
 
+    public function test_admin_can_filter_documents_by_user_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Document::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Document::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $this->actingAs($admin)->getJson("/api/documents?user_id={$clientA->id}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_non_admin_user_id_filter_is_ignored(): void
+    {
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Document::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Document::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $this->actingAs($clientA)->getJson("/api/documents?user_id={$clientB->id}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_rejects_non_existent_user_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->getJson('/api/documents?user_id=99999')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_id']);
+    }
+
     public function test_index_rejects_invalid_per_page(): void
     {
         $client = User::factory()->user()->create();

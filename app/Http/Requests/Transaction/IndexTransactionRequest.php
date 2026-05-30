@@ -26,6 +26,7 @@ class IndexTransactionRequest extends FormRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'document_id' => ['nullable', 'integer', 'exists:documents,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 }

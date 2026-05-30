@@ -144,6 +144,42 @@ class TransactionTest extends TestCase
             ->assertJsonValidationErrors(['document_id']);
     }
 
+    public function test_admin_can_filter_transactions_by_user_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Transaction::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Transaction::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $this->actingAs($admin)->getJson("/api/transactions?user_id={$clientA->id}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_non_admin_user_id_filter_is_ignored(): void
+    {
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Transaction::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Transaction::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $this->actingAs($clientA)->getJson("/api/transactions?user_id={$clientB->id}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_rejects_non_existent_user_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->getJson('/api/transactions?user_id=99999')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_id']);
+    }
+
     public function test_index_paginates_transactions_with_custom_per_page(): void
     {
         $client = User::factory()->user()->create();

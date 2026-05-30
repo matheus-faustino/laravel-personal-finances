@@ -106,6 +106,33 @@ class DocumentServiceTest extends TestCase
         $this->assertSame(1, $result->total());
     }
 
+    public function test_get_all_for_user_filters_by_user_id_when_admin(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Document::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Document::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $result = $this->service->getAllForUser($admin, ['user_id' => $clientA->id]);
+
+        $this->assertSame(3, $result->total());
+    }
+
+    public function test_get_all_for_user_ignores_user_id_filter_for_non_admin(): void
+    {
+        $clientA = User::factory()->user()->create();
+        $clientB = User::factory()->user()->create();
+
+        Document::factory()->count(3)->create(['user_id' => $clientA->id]);
+        Document::factory()->count(2)->create(['user_id' => $clientB->id]);
+
+        $result = $this->service->getAllForUser($clientA, ['user_id' => $clientB->id]);
+
+        $this->assertSame(3, $result->total());
+    }
+
     public function test_get_all_for_user_paginates_results(): void
     {
         $client = User::factory()->user()->create();

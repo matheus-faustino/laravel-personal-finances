@@ -15,7 +15,7 @@ interface TransactionServiceInterface
      * Returns a paginated list of transactions accessible by the given user,
      * optionally filtered by date range on the `date` column and by category.
      *
-     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, category_id?: int|null, document_id?: int|null}  $filters
+     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, category_id?: int|null, document_id?: int|null, user_id?: int|null}  $filters
      */
     public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator;
 

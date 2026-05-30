@@ -37,6 +37,10 @@ class TransactionService implements TransactionServiceInterface
             $query->where('document_id', (int) $filters['document_id']);
         }
 
+        if ($user->isAdmin() && ! empty($filters['user_id'])) {
+            $query->where('user_id', (int) $filters['user_id']);
+        }
+
         return $query->with('category')->paginate(isset($filters['per_page']) ? (int) $filters['per_page'] : 15);
     }
 

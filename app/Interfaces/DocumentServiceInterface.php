@@ -13,7 +13,7 @@ interface DocumentServiceInterface
      * Returns a paginated list of documents accessible by the given user,
      * optionally filtered by date range on the `created_at` column.
      *
-     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null}  $filters
+     * @param  array{start_date?: string|null, end_date?: string|null, per_page?: int|null, user_id?: int|null}  $filters
      */
     public function getAllForUser(User $user, array $filters = []): LengthAwarePaginator;
 
